@@ -1,84 +1,82 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbyW1dGaCZDnbgLa3q_Mr1cR4vJ7uQrwTI34ZjGxL5zCv2w48RDcr4GuTe2Gk6vKegTm/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx9WvT0mwdnNkDtPzowLYJ3CjsHZsO1itqHZ48qSBfXYP_M5WW8lJF-nk1X8r8HiQzq/exec";
 
 let contacts = [];
 
-async function fetchData() {
+async function fetchData(){
   const res = await fetch(API_URL);
   contacts = await res.json();
   renderTable(contacts);
 }
 
-function renderTable(data) {
+function renderTable(data){
   const table = document.getElementById("tableBody");
   table.innerHTML = "";
 
-  data.forEach(item => {
+  data.forEach(c=>{
     table.innerHTML += `
       <tr>
-        <td>${item.nama}</td>
-        <td>${item.perusahaan}</td>
-        <td>${item.kota}</td>
+        <td>${c.nama}</td>
+        <td>${c.perusahaan}</td>
+        <td>${c.jabatan}</td>
+        <td>${c.kota}</td>
+        <td>${c.no_hp}</td>
+        <td>${c.email}</td>
+        <td>${c.kategori}</td>
         <td>
-          <button class="btn btn-sm btn-warning" onclick="editContact('${item.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteContact('${item.id}')">Delete</button>
+          <button class="btn btn-sm btn-warning" onclick="edit('${c.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="removeData('${c.id}')">Delete</button>
         </td>
       </tr>
     `;
   });
 }
 
-document.getElementById("contactForm").addEventListener("submit", async (e)=>{
+document.getElementById("contactForm").addEventListener("submit", async function(e){
   e.preventDefault();
 
-  const id = document.getElementById("contactId").value;
-
   const data = {
-    id: id,
-    nama: document.getElementById("nama").value,
-    perusahaan: document.getElementById("perusahaan").value,
-    kota: document.getElementById("kota").value
+    id: contactId.value,
+    nama: nama.value,
+    perusahaan: perusahaan.value,
+    jabatan: jabatan.value,
+    kota: kota.value,
+    no_hp: no_hp.value,
+    email: email.value,
+    kategori: kategori.value
   };
 
-  await fetch(API_URL, {
-    method: "POST",
+  await fetch(API_URL,{
+    method:"POST",
     body: JSON.stringify(data)
   });
 
-  resetForm();
+  this.reset();
+  contactId.value="";
   fetchData();
 });
 
-function editContact(id){
-  const contact = contacts.find(c => c.id == id);
+function edit(id){
+  const c = contacts.find(x=>x.id==id);
 
-  document.getElementById("contactId").value = contact.id;
-  document.getElementById("nama").value = contact.nama;
-  document.getElementById("perusahaan").value = contact.perusahaan;
-  document.getElementById("kota").value = contact.kota;
+  contactId.value=c.id;
+  nama.value=c.nama;
+  perusahaan.value=c.perusahaan;
+  jabatan.value=c.jabatan;
+  kota.value=c.kota;
+  no_hp.value=c.no_hp;
+  email.value=c.email;
+  kategori.value=c.kategori;
 }
 
-async function deleteContact(id){
-  if(!confirm("Yakin hapus?")) return;
+async function removeData(id){
+  if(!confirm("Hapus data?")) return;
 
-  await fetch(API_URL, {
-    method: "POST",
+  await fetch(API_URL,{
+    method:"POST",
     body: JSON.stringify({action:"delete", id:id})
   });
 
   fetchData();
 }
-
-function resetForm(){
-  document.getElementById("contactId").value = "";
-  document.getElementById("contactForm").reset();
-}
-
-document.getElementById("search").addEventListener("input", function(){
-  const keyword = this.value.toLowerCase();
-  const filtered = contacts.filter(c =>
-    c.nama.toLowerCase().includes(keyword)
-  );
-  renderTable(filtered);
-});
 
 fetchData();
