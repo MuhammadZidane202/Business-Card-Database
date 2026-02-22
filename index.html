@@ -1,82 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Business Card Database</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Database Kartu Nama</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial; padding:20px; }
+    input, select { margin:5px; padding:5px; }
+    button { padding:5px 10px; margin:5px; }
+    table { border-collapse: collapse; margin-top:20px; width:100%; }
+    th, td { border:1px solid #ccc; padding:8px; }
+  </style>
 </head>
+<body>
 
-<body class="bg-light">
+<h2>Database Kartu Nama Pariwisata</h2>
 
-<div class="container mt-5">
+<!-- FORM -->
+<input id="nama_perusahaan" placeholder="Nama Perusahaan">
+<input id="nama" placeholder="Nama">
+<input id="jabatan" placeholder="Jabatan">
+<input id="alamat" placeholder="Alamat">
+<input id="kota" placeholder="Wilayah/Kota">
+<input id="kategori" placeholder="Kategori">
+<input id="telp" placeholder="No Telp/WA">
+<input id="medsos" placeholder="Medsos">
 
-  <div class="card p-4 shadow">
-    <h3 class="text-center mb-4">Business Card Manager</h3>
+<button onclick="saveData()">Simpan</button>
 
-    <div class="row g-3">
+<hr>
 
-      <div class="col-md-6">
-        <input type="text" id="nama_perusahaan" class="form-control" placeholder="Nama Perusahaan">
-      </div>
+<!-- SEARCH & FILTER -->
+<input id="searchInput" placeholder="Search Nama..." onkeyup="loadData()">
+<input id="filterKota" placeholder="Filter Kota..." onkeyup="loadData()">
 
-      <div class="col-md-6">
-        <input type="text" id="nama" class="form-control" placeholder="Nama">
-      </div>
-
-      <div class="col-md-6">
-        <input type="text" id="jabatan" class="form-control" placeholder="Jabatan">
-      </div>
-
-      <div class="col-md-6">
-        <input type="text" id="alamat" class="form-control" placeholder="Alamat">
-      </div>
-
-      <div class="col-md-6">
-        <input type="text" id="wilayah" class="form-control" placeholder="Wilayah / Kota">
-      </div>
-
-      <div class="col-md-6">
-        <input type="text" id="kategori" class="form-control" placeholder="Kategori">
-      </div>
-
-      <div class="col-md-6">
-        <input type="text" id="no_telp" class="form-control" placeholder="No Telp / WA">
-      </div>
-
-      <div class="col-md-6">
-        <input type="text" id="medsos" class="form-control" placeholder="Media Sosial">
-      </div>
-
-    </div>
-
-    <div class="text-center mt-4">
-      <button class="btn btn-primary" onclick="tambahData()">Simpan</button>
-    </div>
-  </div>
-
-
-  <div class="card p-4 shadow mt-4">
-    <h5>Daftar Kontak</h5>
-
-    <table class="table table-bordered table-striped mt-3">
-      <thead class="table-primary">
-        <tr>
-          <th>Perusahaan</th>
-          <th>Nama</th>
-          <th>Jabatan</th>
-          <th>Wilayah</th>
-          <th>Kategori</th>
-          <th>Telp</th>
-          <th>Medsos</th>
-        </tr>
-      </thead>
-      <tbody id="tabelData"></tbody>
-    </table>
-  </div>
-
-</div>
-
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<table>
+  <thead>
+    <tr>
+      <th>Perusahaan</th>
+      <th>Nama</th>
+      <th>Jabatan</th>
+      <th>Kota</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody id="dataTable"></tbody>
+</table>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -84,52 +52,88 @@ const supabase = window.supabase.createClient(
   "sb_publishable_RzqjXOD6Mq5460df3axI2g_jHVk9FuS"
 );
 
-async function tambahData() {
+let editId = null;
 
-  const { error } = await supabase
-    .from('contacts')
-    .insert([{
-      nama_perusahaan: document.getElementById("nama_perusahaan").value,
-      nama: document.getElementById("nama").value,
-      jabatan: document.getElementById("jabatan").value,
-      alamat: document.getElementById("alamat").value,
-      wilayah: document.getElementById("wilayah").value,
-      kategori: document.getElementById("kategori").value,
-      no_telp: document.getElementById("no_telp").value,
-      medsos: document.getElementById("medsos").value
-    }]);
+async function saveData() {
+  const dataObj = {
+    nama_perusahaan: document.getElementById("nama_perusahaan").value,
+    nama: document.getElementById("nama").value,
+    jabatan: document.getElementById("jabatan").value,
+    alamat: document.getElementById("alamat").value,
+    kota: document.getElementById("kota").value,
+    kategori: document.getElementById("kategori").value,
+    telp: document.getElementById("telp").value,
+    medsos: document.getElementById("medsos").value
+  };
 
-  if (error) {
-    alert("Error: " + error.message);
+  if(editId){
+    await supabase.from("business_cards").update(dataObj).eq("id", editId);
+    editId = null;
   } else {
-    alert("Data berhasil disimpan!");
-    loadData();
+    await supabase.from("business_cards").insert([dataObj]);
   }
+
+  clearForm();
+  loadData();
 }
 
 async function loadData() {
+  const search = document.getElementById("searchInput").value;
+  const filterKota = document.getElementById("filterKota").value;
 
-  const { data } = await supabase
-    .from('contacts')
-    .select('*')
-    .order('id', { ascending: false });
+  let query = supabase.from("business_cards").select("*");
 
-  const tabel = document.getElementById("tabelData");
-  tabel.innerHTML = "";
+  if(search){
+    query = query.ilike("nama", `%${search}%`);
+  }
+
+  if(filterKota){
+    query = query.ilike("kota", `%${filterKota}%`);
+  }
+
+  const { data } = await query.order("kota");
+
+  const table = document.getElementById("dataTable");
+  table.innerHTML = "";
 
   data.forEach(item => {
-    tabel.innerHTML += `
+    table.innerHTML += `
       <tr>
         <td>${item.nama_perusahaan}</td>
         <td>${item.nama}</td>
         <td>${item.jabatan}</td>
-        <td>${item.wilayah}</td>
-        <td>${item.kategori}</td>
-        <td>${item.no_telp}</td>
-        <td>${item.medsos}</td>
+        <td>${item.kota}</td>
+        <td>
+          <button onclick="editData(${item.id})">Edit</button>
+          <button onclick="deleteData(${item.id})">Delete</button>
+        </td>
       </tr>
     `;
   });
+}
+
+async function deleteData(id){
+  await supabase.from("business_cards").delete().eq("id", id);
+  loadData();
+}
+
+async function editData(id){
+  const { data } = await supabase.from("business_cards").select("*").eq("id", id).single();
+
+  document.getElementById("nama_perusahaan").value = data.nama_perusahaan;
+  document.getElementById("nama").value = data.nama;
+  document.getElementById("jabatan").value = data.jabatan;
+  document.getElementById("alamat").value = data.alamat;
+  document.getElementById("kota").value = data.kota;
+  document.getElementById("kategori").value = data.kategori;
+  document.getElementById("telp").value = data.telp;
+  document.getElementById("medsos").value = data.medsos;
+
+  editId = id;
+}
+
+function clearForm(){
+  document.querySelectorAll("input").forEach(input => input.value = "");
 }
 
 loadData();
