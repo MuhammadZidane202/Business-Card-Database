@@ -1,34 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Business Card Manager</title>
+  <title>Business Card Database</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-light">
 
 <div class="container mt-5">
+
   <div class="card p-4 shadow">
     <h3 class="text-center mb-4">Business Card Manager</h3>
 
     <div class="row g-3">
-      <div class="col-md-4">
+
+      <div class="col-md-6">
+        <input type="text" id="nama_perusahaan" class="form-control" placeholder="Nama Perusahaan">
+      </div>
+
+      <div class="col-md-6">
         <input type="text" id="nama" class="form-control" placeholder="Nama">
       </div>
-      <div class="col-md-4">
-        <input type="text" id="perusahaan" class="form-control" placeholder="Perusahaan">
-      </div>
-      <div class="col-md-4">
+
+      <div class="col-md-6">
         <input type="text" id="jabatan" class="form-control" placeholder="Jabatan">
       </div>
-      <div class="col-md-4">
-        <input type="text" id="kota" class="form-control" placeholder="Kota">
+
+      <div class="col-md-6">
+        <input type="text" id="alamat" class="form-control" placeholder="Alamat">
       </div>
-      <div class="col-md-4">
-        <input type="text" id="hp" class="form-control" placeholder="No HP">
+
+      <div class="col-md-6">
+        <input type="text" id="wilayah" class="form-control" placeholder="Wilayah / Kota">
       </div>
-      <div class="col-md-4">
-        <input type="text" id="email" class="form-control" placeholder="Email">
+
+      <div class="col-md-6">
+        <input type="text" id="kategori" class="form-control" placeholder="Kategori">
       </div>
+
+      <div class="col-md-6">
+        <input type="text" id="no_telp" class="form-control" placeholder="No Telp / WA">
+      </div>
+
+      <div class="col-md-6">
+        <input type="text" id="medsos" class="form-control" placeholder="Media Sosial">
+      </div>
+
     </div>
 
     <div class="text-center mt-4">
@@ -36,86 +53,86 @@
     </div>
   </div>
 
+
   <div class="card p-4 shadow mt-4">
     <h5>Daftar Kontak</h5>
-    <table class="table table-bordered mt-3">
+
+    <table class="table table-bordered table-striped mt-3">
       <thead class="table-primary">
         <tr>
-          <th>Nama</th>
           <th>Perusahaan</th>
+          <th>Nama</th>
           <th>Jabatan</th>
-          <th>Kota</th>
-          <th>No HP</th>
-          <th>Email</th>
-          <th>Aksi</th>
+          <th>Wilayah</th>
+          <th>Kategori</th>
+          <th>Telp</th>
+          <th>Medsos</th>
         </tr>
       </thead>
       <tbody id="tabelData"></tbody>
     </table>
   </div>
+
 </div>
 
-<script>
-let dataKontak = JSON.parse(localStorage.getItem("kontak")) || [];
 
-function renderData() {
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://xvbzwkbkjfopbkceqsga.supabase.co",
+  "sb_publishable_RzqjXOD6Mq5460df3axI2g_jHVk9FuS"
+);
+
+async function tambahData() {
+
+  const { error } = await supabase
+    .from('contacts')
+    .insert([{
+      nama_perusahaan: document.getElementById("nama_perusahaan").value,
+      nama: document.getElementById("nama").value,
+      jabatan: document.getElementById("jabatan").value,
+      alamat: document.getElementById("alamat").value,
+      wilayah: document.getElementById("wilayah").value,
+      kategori: document.getElementById("kategori").value,
+      no_telp: document.getElementById("no_telp").value,
+      medsos: document.getElementById("medsos").value
+    }]);
+
+  if (error) {
+    alert("Error: " + error.message);
+  } else {
+    alert("Data berhasil disimpan!");
+    loadData();
+  }
+}
+
+async function loadData() {
+
+  const { data } = await supabase
+    .from('contacts')
+    .select('*')
+    .order('id', { ascending: false });
+
   const tabel = document.getElementById("tabelData");
   tabel.innerHTML = "";
 
-  dataKontak.forEach((item, index) => {
+  data.forEach(item => {
     tabel.innerHTML += `
       <tr>
+        <td>${item.nama_perusahaan}</td>
         <td>${item.nama}</td>
-        <td>${item.perusahaan}</td>
         <td>${item.jabatan}</td>
-        <td>${item.kota}</td>
-        <td>${item.hp}</td>
-        <td>${item.email}</td>
-        <td>
-          <button class="btn btn-warning btn-sm" onclick="editData(${index})">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="hapusData(${index})">Hapus</button>
-        </td>
+        <td>${item.wilayah}</td>
+        <td>${item.kategori}</td>
+        <td>${item.no_telp}</td>
+        <td>${item.medsos}</td>
       </tr>
     `;
   });
-
-  localStorage.setItem("kontak", JSON.stringify(dataKontak));
 }
 
-function tambahData() {
-  const kontakBaru = {
-    nama: document.getElementById("nama").value,
-    perusahaan: document.getElementById("perusahaan").value,
-    jabatan: document.getElementById("jabatan").value,
-    kota: document.getElementById("kota").value,
-    hp: document.getElementById("hp").value,
-    email: document.getElementById("email").value
-  };
-
-  dataKontak.push(kontakBaru);
-  renderData();
-  document.querySelectorAll("input").forEach(input => input.value = "");
-}
-
-function hapusData(index) {
-  dataKontak.splice(index, 1);
-  renderData();
-}
-
-function editData(index) {
-  const item = dataKontak[index];
-  document.getElementById("nama").value = item.nama;
-  document.getElementById("perusahaan").value = item.perusahaan;
-  document.getElementById("jabatan").value = item.jabatan;
-  document.getElementById("kota").value = item.kota;
-  document.getElementById("hp").value = item.hp;
-  document.getElementById("email").value = item.email;
-
-  dataKontak.splice(index, 1);
-  renderData();
-}
-
-renderData();
+loadData();
 </script>
 
 </body>
